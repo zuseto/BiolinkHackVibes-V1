@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Biolink</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-card: rgba(15, 255, 80, 0.03);
+            --border-color: rgba(0, 255, 65, 0.15);
+            --text-primary: #e0e0e0;
+            --text-secondary: #7fdbca;
+            --text-muted: #3d5c52;
+            --accent: #00ff41;
+            --accent-secondary: #0ff;
+            --accent-pink: #ff00ff;
+            --avatar-border: #0a0a0f;
+            --placeholder-bg: #0d1117;
+            --glow: rgba(0, 255, 65, 0.3);
+        }
+
+        [data-theme="light"] {
+            --bg-primary: #f0f4f8;
+            --bg-card: rgba(0, 100, 50, 0.04);
+            --border-color: rgba(0, 150, 80, 0.2);
+            --text-primary: #1a2332;
+            --text-secondary: #2d6b5a;
+            --text-muted: #6b8f85;
+            --accent: #059669;
+            --accent-secondary: #0891b2;
+            --avatar-border: #f0f4f8;
+            --placeholder-bg: #e2e8f0;
+            --glow: rgba(5, 150, 105, 0.2);
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+            background: var(--bg-primary);
+            overflow-x: hidden;
+            transition: background 0.5s ease;
+        }
+
+        /* === MATRIX CANVAS BACKGROUND === */
+        #matrixCanvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 0;
+            opacity: 0.4;
+        }
+
+        [data-theme="light"] #matrixCanvas { opacity: 0.15; }
+
+        /* === PARTICLE NETWORK CANVAS === */
+        #particleCanvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 1;
+            opacity: 0.6;
+        }
+
+        [data-theme="light"] #particleCanvas { opacity: 0.3; }
+
+        /* === FLOATING CODE SNIPPETS === */
+        .floating-code {
+            position: fixed;
+            z-index: 1;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            color: rgba(0, 255, 65, 0.12);
+            white-space: nowrap;
+            pointer-events: none;
+            animation: code-float 25s linear infinite;
+        }
+
+        [data-theme="light"] .floating-code { color: rgba(5, 150, 105, 0.1); }
+
+        .floating-code:nth-child(1) { top: 10%; left: -200px; animation-delay: 0s; }
+        .floating-code:nth-child(2) { top: 30%; left: -300px; animation-delay: -5s; }
+        .floating-code:nth-child(3) { top: 50%; left: -250px; animation-delay: -10s; }
+        .floating-code:nth-child(4) { top: 70%; left: -350px; animation-delay: -15s; }
+        .floating-code:nth-child(5) { top: 85%; left: -280px; animation-delay: -20s; }
+
+        @keyframes code-float {
+            from { transform: translateX(0); }
+            to { transform: translateX(calc(100vw + 400px)); }
+        }
+
+        /* === SCAN LINE === */
+        .scanline {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            z-index: 2;
+            opacity: 0.3;
+            animation: scan 4s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes scan {
+            0% { top: -2px; }
+            100% { top: 100%; }
+        }
+
+        /* === GRID OVERLAY === */
+        .grid-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 1;
+            background-image:
+                linear-gradient(rgba(0,255,65,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,255,65,0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+        }
+
+        [data-theme="light"] .grid-overlay {
+            background-image:
+                linear-gradient(rgba(5,150,105,0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(5,150,105,0.05) 1px, transparent 1px);
+        }
+
+        /* === THEME TOGGLE === */
+        .theme-toggle {
+            position: fixed; top: 20px; right: 20px; z-index: 100;
+            width: 44px; height: 44px; border-radius: 50%;
+            border: 1px solid var(--border-color); background: rgba(0,0,0,0.6);
+            color: var(--accent); font-size: 1.1rem; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.3s ease; backdrop-filter: blur(10px);
+        }
+        .theme-toggle:hover { transform: rotate(30deg) scale(1.1); box-shadow: 0 0 20px var(--glow); }
+
+        /* === MUSIC PLAYER === */
+        .music-player { position: fixed; top: 20px; left: 20px; z-index: 100; display: flex; align-items: center; gap: 10px; }
+        .music-btn {
+            width: 44px; height: 44px; border-radius: 50%;
+            border: 1px solid var(--border-color); background: rgba(0,0,0,0.6);
+            color: var(--accent); font-size: 1.1rem; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.3s ease; backdrop-filter: blur(10px);
+        }
+        .music-btn:hover { box-shadow: 0 0 20px var(--glow); }
+        .music-btn.playing { animation: music-pulse 1.5s infinite; }
+        @keyframes music-pulse { 0%, 100% { box-shadow: 0 0 0 0 var(--glow); } 50% { box-shadow: 0 0 15px 5px var(--glow); } }
+
+        .music-bars { display: flex; align-items: flex-end; gap: 2px; height: 16px; }
+        .music-bars .bar { width: 3px; background: var(--accent); border-radius: 2px; height: 4px; }
+        .music-bars.active .bar { animation: bar-dance 0.8s infinite ease-in-out; }
+        .music-bars.active .bar:nth-child(1) { animation-delay: 0s; }
+        .music-bars.active .bar:nth-child(2) { animation-delay: 0.15s; }
+        .music-bars.active .bar:nth-child(3) { animation-delay: 0.3s; }
+        .music-bars.active .bar:nth-child(4) { animation-delay: 0.45s; }
+        @keyframes bar-dance { 0%, 100% { height: 4px; } 50% { height: 16px; } }
+
+        /* === CONTAINER === */
+        .container {
+            position: relative; z-index: 10; width: 100%; max-width: 440px;
+            padding: 40px 24px; text-align: center;
+        }
+
+        /* === TERMINAL CARD === */
+        .terminal-card {
+            background: rgba(10, 10, 15, 0.85);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 32px 24px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 0 40px rgba(0, 255, 65, 0.05), inset 0 1px 0 rgba(0, 255, 65, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        [data-theme="light"] .terminal-card {
+            background: rgba(255, 255, 255, 0.85);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+        }
+
+        .terminal-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 32px;
+            background: rgba(0, 255, 65, 0.05);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .terminal-dots {
+            position: absolute;
+            top: 10px; left: 16px;
+            display: flex; gap: 6px;
+        }
+
+        .terminal-dots span {
+            width: 10px; height: 10px; border-radius: 50%;
+        }
+        .terminal-dots span:nth-child(1) { background: #ff5f57; }
+        .terminal-dots span:nth-child(2) { background: #ffbd2e; }
+        .terminal-dots span:nth-child(3) { background: #28c840; }
+
+        .terminal-title {
+            position: absolute;
+            top: 8px; left: 50%; transform: translateX(-50%);
+            font-size: 0.65rem; color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* === PROFILE === */
+        .profile { margin-top: 16px; margin-bottom: 28px; animation: fadeInDown 0.8s ease-out; }
+        .avatar {
+            width: 100px; height: 100px; border-radius: 50%; margin: 0 auto 16px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+            padding: 3px; animation: pulse-ring 3s infinite;
+            box-shadow: 0 0 30px var(--glow);
+        }
+        .avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid var(--avatar-border); }
+        .avatar-placeholder {
+            width: 100%; height: 100%; border-radius: 50%;
+            background: var(--placeholder-bg); border: 3px solid var(--avatar-border);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 36px; color: var(--accent);
+        }
+        @keyframes pulse-ring { 0%, 100% { box-shadow: 0 0 20px var(--glow); } 50% { box-shadow: 0 0 40px var(--glow), 0 0 60px rgba(0,255,65,0.1); } }
+
+        .profile h1 {
+            color: var(--text-primary); font-size: 1.4rem; font-weight: 700; margin-bottom: 4px;
+            text-shadow: 0 0 10px var(--glow);
+        }
+
+        /* === TYPING === */
+        .typing-wrapper { height: 1.5em; overflow: hidden; margin-bottom: 8px; }
+        .typing-text {
+            display: inline-block; color: var(--accent); font-size: 0.85rem;
+            border-right: 2px solid var(--accent); padding-right: 4px;
+            animation: blink-caret 0.75s step-end infinite;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        @keyframes blink-caret { from, to { border-color: transparent; } 50% { border-color: var(--accent); } }
+
+        /* === STATUS === */
+        .status {
+            display: inline-flex; align-items: center; gap: 6px; margin-top: 10px;
+            padding: 5px 12px; background: rgba(0,255,65,0.08); border: 1px solid rgba(0,255,65,0.25);
+            border-radius: 20px; font-size: 0.7rem; color: var(--accent);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .status-dot { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; animation: blink-dot 2s infinite; box-shadow: 0 0 6px var(--accent); }
+        @keyframes blink-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        /* === VISITOR COUNTER === */
+        .visitor-counter {
+            display: inline-flex; align-items: center; gap: 8px; margin-top: 12px;
+            padding: 6px 14px; background: var(--bg-card); border: 1px solid var(--border-color);
+            border-radius: 20px; font-size: 0.7rem; color: var(--text-secondary);
+            animation: fadeInUp 0.6s ease-out 0.9s forwards; opacity: 0;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .visitor-counter i { color: var(--accent-secondary); }
+        .visitor-count { font-weight: 700; color: var(--accent); }
+
+        /* === LINKS === */
+        .links { display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
+        .link-item {
+            position: relative; display: flex; align-items: center; gap: 14px;
+            padding: 14px 18px; background: rgba(0,255,65,0.02);
+            border: 1px solid var(--border-color); border-radius: 12px;
+            color: var(--text-primary); text-decoration: none;
+            font-size: 0.88rem; font-weight: 500; overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0; transform: translateY(20px); animation: fadeInUp 0.6s ease-out forwards;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .link-item:nth-child(1) { animation-delay: 0.1s; }
+        .link-item:nth-child(2) { animation-delay: 0.2s; }
+        .link-item:nth-child(3) { animation-delay: 0.3s; }
+        .link-item:nth-child(4) { animation-delay: 0.4s; }
+        .link-item:nth-child(5) { animation-delay: 0.5s; }
+        .link-item:nth-child(6) { animation-delay: 0.6s; }
+
+        .link-item::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0,255,65,0.06), transparent);
+            transition: left 0.6s;
+        }
+        .link-item:hover::before { left: 100%; }
+        .link-item:hover {
+            transform: translateY(-2px) scale(1.01);
+            border-color: var(--accent);
+            background: rgba(0,255,65,0.06);
+            box-shadow: 0 0 25px var(--glow), inset 0 0 25px rgba(0,255,65,0.02);
+        }
+        .link-item:active { transform: scale(0.98); }
+
+        .link-icon {
+            width: 38px; height: 38px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem; flex-shrink: 0;
+        }
+        .link-item .arrow { margin-left: auto; color: var(--text-muted); transition: transform 0.3s, color 0.3s; font-size: 0.8rem; }
+        .link-item:hover .arrow { transform: translateX(4px); color: var(--accent); }
+
+        /* Icon colors */
+        .icon-instagram { background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); color: #fff; }
+        .icon-tiktok { background: #010101; color: #fff; border: 1px solid #333; }
+        .icon-youtube { background: #ff0000; color: #fff; }
+        .icon-github { background: #161b22; color: #fff; border: 1px solid #333; }
+        .icon-whatsapp { background: #25d366; color: #fff; }
+        .icon-portfolio { background: linear-gradient(135deg, #00ff41, #0ff); color: #000; }
+
+        /* === SOCIAL ROW === */
+        .social-row { display: flex; justify-content: center; gap: 14px; margin-bottom: 20px; animation: fadeInUp 0.6s ease-out 0.7s forwards; opacity: 0; }
+        .social-icon {
+            width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            background: transparent; border: 1px solid var(--border-color); color: var(--text-secondary);
+            font-size: 1rem; text-decoration: none; transition: all 0.3s ease;
+        }
+        .social-icon:hover { color: var(--accent); transform: translateY(-3px); box-shadow: 0 0 20px var(--glow); border-color: var(--accent); }
+
+        /* === FOOTER === */
+        .footer {
+            color: var(--text-muted); font-size: 0.7rem;
+            animation: fadeInUp 0.6s ease-out 0.8s forwards; opacity: 0;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .footer .heart { color: var(--accent); }
+
+        /* === ANIMATIONS === */
+        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Ripple */
+        .ripple { position: absolute; border-radius: 50%; background: rgba(0,255,65,0.3); transform: scale(0); animation: ripple-anim 0.6s linear; pointer-events: none; }
+        @keyframes ripple-anim { to { transform: scale(4); opacity: 0; } }
+
+        /* Toast */
+        .toast {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px);
+            padding: 12px 24px; background: rgba(0,0,0,0.9); color: var(--accent);
+            border: 1px solid var(--border-color); border-radius: 12px;
+            font-size: 0.8rem; font-weight: 500; z-index: 1000; opacity: 0;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 30px var(--glow); font-family: 'JetBrains Mono', monospace;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .container { padding: 20px 12px; }
+            .terminal-card { padding: 28px 16px; }
+            .profile h1 { font-size: 1.2rem; }
+            .music-player { top: 14px; left: 14px; }
+            .theme-toggle { top: 14px; right: 14px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Matrix Rain Canvas -->
+    <canvas id="matrixCanvas"></canvas>
+
+    <!-- Particle Network Canvas -->
+    <canvas id="particleCanvas"></canvas>
+
+    <!-- Grid Overlay -->
+    <div class="grid-overlay"></div>
+
+    <!-- Scan Line -->
+    <div class="scanline"></div>
+
+    <!-- Floating Code Snippets -->
+    <div class="floating-code">const life = () => { while(alive) { eat(); sleep(); code(); repeat(); } };</div>
+    <div class="floating-code">git commit -m "fixed bug that mass created more bugs" && git push origin main</div>
+    <div class="floating-code">if (coffee === empty) { refill(); } else { code(); } // never stop coding</div>
+    <div class="floating-code">sudo rm -rf /problems && echo "All problems solved" // just kidding</div>
+    <div class="floating-code">while (!succeed) { try(); } // persistence is key 🔑</div>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+        <i class="fas fa-terminal"></i>
+    </button>
+
+    <!-- Music Player -->
+    <div class="music-player">
+        <button class="music-btn" id="musicBtn" aria-label="Toggle music">
+            <i class="fas fa-play"></i>
+        </button>
+        <div class="music-bars" id="musicBars">
+            <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="terminal-card">
+            <!-- Terminal Header -->
+            <div class="terminal-dots"><span></span><span></span><span></span></div>
+            <div class="terminal-title">~/biolink — zsh</div>
+
+            <!-- Profile -->
+            <div class="profile">
+                <div class="avatar">
+                    <div class="avatar-placeholder"><i class="fas fa-terminal"></i></div>
+                </div>
+                <h1>&lt;Nama Kamu /&gt;</h1>
+                <div class="typing-wrapper">
+                    <span class="typing-text" id="typingText"></span>
+                </div>
+                <div class="status">
+                    <div class="status-dot"></div>
+                    ~/status: online
+                </div>
+                <div class="visitor-counter">
+                    <i class="fas fa-signal"></i>
+                    <span>connections: <span class="visitor-count" id="visitorCount">0</span></span>
+                </div>
+            </div>
+
+            <!-- Links -->
+            <div class="links">
+                <a href="#" class="link-item" onclick="createRipple(event)">
+                    <div class="link-icon icon-portfolio"><i class="fas fa-code"></i></div>
+                    ./portfolio
+                    <i class="fas fa-chevron-right arrow"></i>
+                </a>
+                <a href="#" class="link-item" onclick="createRipple(event)">
+                    <div class="link-icon icon-instagram"><i class="fab fa-instagram"></i></div>
+                    ./instagram
+                    <i class="fas fa-chevron-right arrow"></i>
+                </a>
+                <a href="#" class="link-item" onclick="createRipple(event)">
+                    <div class="link-icon icon-tiktok"><i class="fab fa-tiktok"></i></div>
+                    ./tiktok
+                    <i class="fas fa-chevron-right arrow"></i>
+                </a>
+                <a href="#" class="link-item" onclick="createRipple(event)">
+                    <div class="link-icon icon-youtube"><i class="fab fa-youtube"></i></div>
+                    ./youtube
+                    <i class="fas fa-chevron-right arrow"></i>
+                </a>
+                <a href="#" class="link-item" onclick="createRipple(event)">
+                    <div class="link-icon icon-github"><i class="fab fa-github"></i></div>
+                    ./github
+                    <i class="fas fa-chevron-right arrow"></i>
+                </a>
+                <a href="#" class="link-item" onclick="createRipple(event)">
+                    <div class="link-icon icon-whatsapp"><i class="fab fa-whatsapp"></i></div>
+                    ./whatsapp
+                    <i class="fas fa-chevron-right arrow"></i>
+                </a>
+            </div>
+
+            <!-- Social Row -->
+            <div class="social-row">
+                <a href="#" class="social-icon"><i class="fab fa-instagram"></i></a>
+                <a href="#" class="social-icon"><i class="fab fa-tiktok"></i></a>
+                <a href="#" class="social-icon"><i class="fab fa-x-twitter"></i></a>
+                <a href="#" class="social-icon"><i class="fab fa-github"></i></a>
+                <a href="#" class="social-icon"><i class="fab fa-discord"></i></a>
+            </div>
+
+            <!-- Footer -->
+            <div class="footer">
+                <span class="heart">&lt;/&gt;</span> with ☕ by dev | &copy; 2026
+            </div>
+        </div>
+    </div>
+
+    <!-- Audio -->
+    <audio id="bgMusic" loop preload="none">
+        <source src="https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        // === MATRIX RAIN ===
+        const matrixCanvas = document.getElementById('matrixCanvas');
+        const mCtx = matrixCanvas.getContext('2d');
+
+        function resizeMatrix() {
+            matrixCanvas.width = window.innerWidth;
+            matrixCanvas.height = window.innerHeight;
+        }
+        resizeMatrix();
+        window.addEventListener('resize', resizeMatrix);
+
+        const chars = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789ABCDEF{}[]<>/\\|;:=+-*&^%$#@!~';
+        const fontSize = 14;
+        let columns = Math.floor(matrixCanvas.width / fontSize);
+        let drops = Array(columns).fill(1);
+
+        function drawMatrix() {
+            mCtx.fillStyle = 'rgba(10, 10, 15, 0.05)';
+            mCtx.fillRect(0, 0, matrixCanvas.width, matrixCanvas.height);
+
+            const theme = document.documentElement.getAttribute('data-theme');
+            mCtx.fillStyle = theme === 'light' ? '#059669' : '#00ff41';
+            mCtx.font = fontSize + 'px monospace';
+
+            for (let i = 0; i < drops.length; i++) {
+                const text = chars[Math.floor(Math.random() * chars.length)];
+                mCtx.globalAlpha = Math.random() * 0.5 + 0.1;
+                mCtx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                if (drops[i] * fontSize > matrixCanvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i]++;
+            }
+            mCtx.globalAlpha = 1;
+            requestAnimationFrame(drawMatrix);
+        }
+        drawMatrix();
+
+        // === PARTICLE NETWORK ===
+        const particleCanvas = document.getElementById('particleCanvas');
+        const pCtx = particleCanvas.getContext('2d');
+
+        function resizeParticle() {
+            particleCanvas.width = window.innerWidth;
+            particleCanvas.height = window.innerHeight;
+        }
+        resizeParticle();
+        window.addEventListener('resize', resizeParticle);
+
+        const particles = [];
+        const particleCount = 60;
+        const connectionDistance = 150;
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * particleCanvas.width;
+                this.y = Math.random() * particleCanvas.height;
+                this.vx = (Math.random() - 0.5) * 0.8;
+                this.vy = (Math.random() - 0.5) * 0.8;
+                this.size = Math.random() * 2 + 1;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                if (this.x < 0 || this.x > particleCanvas.width) this.vx *= -1;
+                if (this.y < 0 || this.y > particleCanvas.height) this.vy *= -1;
+            }
+            draw() {
+                const theme = document.documentElement.getAttribute('data-theme');
+                pCtx.beginPath();
+                pCtx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                pCtx.fillStyle = theme === 'light' ? '#059669' : '#00ff41';
+                pCtx.fill();
+            }
+        }
+
+        for (let i = 0; i < particleCount; i++) {
+            particles.push(new Particle());
+        }
+
+        function drawParticles() {
+            pCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
+            const theme = document.documentElement.getAttribute('data-theme');
+
+            for (let i = 0; i < particles.length; i++) {
+                particles[i].update();
+                particles[i].draw();
+
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < connectionDistance) {
+                        pCtx.beginPath();
+                        pCtx.moveTo(particles[i].x, particles[i].y);
+                        pCtx.lineTo(particles[j].x, particles[j].y);
+                        pCtx.strokeStyle = theme === 'light'
+                            ? `rgba(5, 150, 105, ${1 - dist / connectionDistance})`
+                            : `rgba(0, 255, 65, ${0.3 * (1 - dist / connectionDistance)})`;
+                        pCtx.lineWidth = 0.5;
+                        pCtx.stroke();
+                    }
+                }
+            }
+            requestAnimationFrame(drawParticles);
+        }
+        drawParticles();
+
+        // === THEME TOGGLE ===
+        const themeToggle = document.getElementById('themeToggle');
+        const html = document.documentElement;
+        const savedTheme = localStorage.getItem('biolink-theme') || 'dark';
+        html.setAttribute('data-theme', savedTheme);
+        updateThemeIcon(savedTheme);
+
+        themeToggle.addEventListener('click', () => {
+            const current = html.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            localStorage.setItem('biolink-theme', next);
+            updateThemeIcon(next);
+            showToast(next === 'light' ? '☀️ Light mode activated' : '🌙 Dark mode activated');
+        });
+
+        function updateThemeIcon(theme) {
+            themeToggle.innerHTML = theme === 'dark'
+                ? '<i class="fas fa-terminal"></i>'
+                : '<i class="fas fa-sun"></i>';
+        }
+
+        // === MUSIC PLAYER ===
+        const musicBtn = document.getElementById('musicBtn');
+        const musicBars = document.getElementById('musicBars');
+        const bgMusic = document.getElementById('bgMusic');
+        let isPlaying = false;
+        bgMusic.volume = 0.4;
+
+        musicBtn.addEventListener('click', () => {
+            if (isPlaying) {
+                bgMusic.pause();
+                musicBtn.classList.remove('playing');
+                musicBtn.innerHTML = '<i class="fas fa-play"></i>';
+                musicBars.classList.remove('active');
+                showToast('⏸️ stream.pause()');
+            } else {
+                bgMusic.play().then(() => {
+                    musicBtn.classList.add('playing');
+                    musicBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                    musicBars.classList.add('active');
+                    showToast('▶️ stream.play("lofi_beats.mp3")');
+                }).catch(() => showToast('⚠️ user interaction required'));
+            }
+            isPlaying = !isPlaying;
+        });
+
+        // === TYPING EFFECT ===
+        const typingEl = document.getElementById('typingText');
+        const phrases = [
+            '$ whoami → Full Stack Dev',
+            '$ cat skills.txt → JS, Python, React',
+            '$ uptime → coding since 2020',
+            '$ echo "open for collab"'
+        ];
+        let phraseIndex = 0, charIndex = 0, isDeleting = false;
+
+        function typeEffect() {
+            const current = phrases[phraseIndex];
+            typingEl.textContent = isDeleting
+                ? current.substring(0, --charIndex)
+                : current.substring(0, ++charIndex);
+
+            let speed = isDeleting ? 40 : 80;
+            if (!isDeleting && charIndex === current.length) { speed = 2500; isDeleting = true; }
+            else if (isDeleting && charIndex === 0) { isDeleting = false; phraseIndex = (phraseIndex + 1) % phrases.length; speed = 500; }
+            setTimeout(typeEffect, speed);
+        }
+        typeEffect();
+
+        // === VISITOR COUNTER ===
+        const visitorEl = document.getElementById('visitorCount');
+        let count = parseInt(localStorage.getItem('biolink-visitors') || '0') + 1;
+        localStorage.setItem('biolink-visitors', count);
+        let displayed = 0;
+        const counterInterval = setInterval(() => {
+            displayed += Math.ceil(count / 20);
+            if (displayed >= count) { displayed = count; clearInterval(counterInterval); }
+            visitorEl.textContent = displayed.toLocaleString();
+        }, 40);
+
+        // === RIPPLE ===
+        function createRipple(event) {
+            const link = event.currentTarget;
+            const ripple = document.createElement('span');
+            const rect = link.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            ripple.style.width = ripple.style.height = size + 'px';
+            ripple.style.left = (event.clientX - rect.left - size / 2) + 'px';
+            ripple.style.top = (event.clientY - rect.top - size / 2) + 'px';
+            ripple.classList.add('ripple');
+            link.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 600);
+        }
+
+        // === TOAST ===
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2500);
+        }
+
+        // === RESIZE HANDLER ===
+        window.addEventListener('resize', () => {
+            columns = Math.floor(matrixCanvas.width / fontSize);
+            drops = Array(columns).fill(1);
+        });
+    </script>
+</body>
+</html>
